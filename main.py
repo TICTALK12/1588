@@ -1,101 +1,119 @@
 import streamlit as st
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
+import random
 
-st.set_page_config(page_title="KBO 선수 성적 조회", layout="wide")
+# 1. 페이지 및 세션 초기화
+st.set_page_config(page_title="Streamlit Blackjack", page_icon="🃏")
 
-# KBO 선수 정보 크롤링 함수
-@st.cache_data(ttl=3600)  # 1시간 동안 결과 캐싱
-def get_kbo_player_data(player_name):
-    # 1. KBO 선수 검색
-    search_url = f"https://www.koreabaseball.com/Player/Search.aspx?searchWord={player_name}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    res = requests.get(search_url, headers=headers)
-    soup = BeautifulSoup(res.text, "html.parser")
-    
-    # 검색 결과 확인
-    rows = soup.select(".tData tbody tr")
-    if not rows or "검색 결과가 없습니다" in rows[0].text:
-        return None
+if "points" not in st.session_state:
+    st.session_state.points = 1000
+if "deck" not in st.session_state:
+    st.session_state.deck = []
+if "player_hand" not in st.session_state:
+    st.session_state.player_hand = []
+if "dealer_hand" not in st.session_state:
+    st.session_state.dealer_hand = []
+if "game_status" not in st.session_state:
+    st.session_state.game_status = "BET"  # BET, PLAYING, GAME_OVER
+if "bet" not in st.session_state:
+    st.session_state.bet = 0
 
-    # 첫 번째 검색 결과에서 선수 ID 및 기본 정보 추출
-    first_row = rows[0].select("td")
-    player_id = first_row[0].find("a")["href"].split("playerId=")[-1]
-    name = first_row[1].text.strip()
-    team = first_row[2].text.strip()
-    position = first_row[3].text.strip()
+# 2. 로직 함수
+suits = ["♠️", "♥️", "♦️", "♣️"]
+ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
 
-    # 2. 선수 상세 페이지 접속 (프로필 + 성적)
-    detail_url = f"https://www.koreabaseball.com/Player/Detail.aspx?playerId={player_id}"
-    detail_res = requests.get(detail_url, headers=headers)
-    detail_soup = BeautifulSoup(detail_res.text, "html.parser")
-
-    # 프로필 이미지 추출
-    img_tag = detail_soup.select_one("#cphContents_cphContents_cphContent_playerProfile_imgProfile")
-    img_url = "https:" + img_tag["src"] if img_tag else None
-
-    # 기록 테이블 추출 (타자/투수 성적)
-    stat_table = detail_soup.select_one(".tData")
-    stats_df = pd.DataFrame()
-    
-    if stat_table:
-        headers_list = [th.text.strip() for th in stat_table.select("thead tr th")]
-        data_rows = []
-        for tr in stat_table.select("tbody tr"):
-            row_data = [td.text.strip() for td in tr.select("td")]
-            if len(row_data) == len(headers_list):
-                data_rows.append(row_data)
-        
-        stats_df = pd.DataFrame(data_rows, columns=headers_list)
-
-    return {
-        "name": name,
-        "team": team,
-        "position": position,
-        "image": img_url,
-        "stats": stats_df
-    }
-
-# UI 구성
-st.title("⚾ KBO 선수 성적 실시간 조회")
-
-player_input = st.text_input("선수 이름을 입력하세요 (예: 김도영, 구자욱, 손아섭)", value="김도영")
-
-if player_input:
-    with st.spinner("KBO 데이터를 가져오는 중..."):
-        player = get_kbo_player_data(player_input)
-
-    if player:
-        st.success(f"'{player['name']}' 선수를 찾았습니다.")
-        st.divider()
-
-        # 프로필 섹션
-        col1, col2 = st.columns([1, 3])
-        with col1:
-            if player["image"]:
-                st.image(player["image"], width=160)
-        with col2:
-            st.subheader(f"{player['name']} 선수 프로필")
-            st.write(f"**소속팀:** {player['team']}")
-            st.write(f"**포지션:** {player['position']}")
-
-        st.divider()
-
-        # 성적 테이블 섹션
-        st.subheader("📊 통산/시즌별 기록")
-        if not player["stats"].empty:
-            st.dataframe(player["stats"], use_container_width=True)
-            
-            # 숫자형 변환 및 간이 차트 (타자/투수에 맞춰 컬럼 확인)
-            if "AVG" in player["stats"].columns:  # 타자인 경우
-                df_chart = player["stats"].copy()
-                df_chart = df_chart[df_chart["연도"].str.isdigit()]  # 통산/합계 행 제외
-                df_chart["AVG"] = pd.to_numeric(df_chart["AVG"], errors="coerce")
-                
-                st.subheader("📈 연도별 타율 추이")
-                st.line_chart(df_chart, x="연도", y="AVG")
+def calculate_score(hand):
+    score = 0
+    aces = 0
+    for card in hand:
+        val = card[:-2]
+        if val in ["J", "Q", "K"]:
+            score += 10
+        elif val == "A":
+            aces += 1
+            score += 11
         else:
-            st.info("성적 데이터가 없습니다.")
+            score += int(val)
+    while score > 21 and aces > 0:
+        score -= 10
+        aces -= 1
+    return score
+
+def start_new_game(bet_amount):
+    deck = [f"{r} {s}" for s in suits for r in ranks]
+    random.shuffle(deck)
+    st.session_state.deck = deck
+    st.session_state.bet = bet_amount
+    st.session_state.points -= bet_amount
+    st.session_state.player_hand = [st.session_state.deck.pop(), st.session_state.deck.pop()]
+    st.session_state.dealer_hand = [st.session_state.deck.pop(), st.session_state.deck.pop()]
+    st.session_state.game_status = "PLAYING"
+
+# 3. 화면 레이아웃
+st.title("🃏 스트림릿 블랙잭")
+st.sidebar.metric("보유 포인트", f"{st.session_state.points} P")
+
+# [단계 1] 베팅 화면
+if st.session_state.game_status == "BET":
+    st.subheader("게임 시작전 베팅해 주세요.")
+    bet_input = st.number_input("베팅금액", min_value=10, max_value=st.session_state.points, value=min(100, st.session_state.points), step=10)
+    if st.button("게임 시작 🎲"):
+        start_new_game(bet_input)
+        st.rerun()
+
+# [단계 2] 진행 및 결과 화면
+elif st.session_state.game_status in ["PLAYING", "GAME_OVER"]:
+    player_score = calculate_score(st.session_state.player_hand)
+    dealer_score = calculate_score(st.session_state.dealer_hand)
+
+    # 딜러 영역
+    st.subheader("🤵 딜러 패")
+    if st.session_state.game_status == "PLAYING":
+        st.write(f"[{st.session_state.dealer_hand[0]} , 🂠]")
     else:
-        st.error("선수를 찾을 수 없습니다. 이름이 정확한지 확인해 주세요.")
+        st.write(f"{'  '.join(st.session_state.dealer_hand)} (점수: {dealer_score})")
+
+    st.divider()
+
+    # 플레이어 영역
+    st.subheader("👤 플레이어 패")
+    st.write(f"{'  '.join(st.session_state.player_hand)} (점수: {player_score})")
+
+    # 액션 버튼 (Hit / Stand)
+    if st.session_state.game_status == "PLAYING":
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Hit (카드 받기) 🎴"):
+                st.session_state.player_hand.append(st.session_state.deck.pop())
+                if calculate_score(st.session_state.player_hand) > 21:
+                    st.session_state.game_status = "GAME_OVER"
+                st.rerun()
+        with col2:
+            if st.button("Stand (차례 넘기기) ✋"):
+                # 딜러는 17 이상이 될 때까지 계속 카드를 받음
+                while calculate_score(st.session_state.dealer_hand) < 17:
+                    st.session_state.dealer_hand.append(st.session_state.deck.pop())
+                st.session_state.game_status = "GAME_OVER"
+                st.rerun()
+
+    # 결과 판정
+    if st.session_state.game_status == "GAME_OVER":
+        st.divider()
+        if player_score > 21:
+            st.error("버스트(Bust)! 21을 초과하여 패배했습니다.")
+        elif dealer_score > 21:
+            st.success(f"딜러 버스트! 딜러가 21을 초과하여 승리했습니다. (+{st.session_state.bet * 2} P)")
+            st.session_state.points += st.session_state.bet * 2
+            st.balloons()
+        elif player_score > dealer_score:
+            st.success(f"승리했습니다! (+{st.session_state.bet * 2} P)")
+            st.session_state.points += st.session_state.bet * 2
+            st.balloons()
+        elif player_score < dealer_score:
+            st.error("딜러의 점수가 더 높아 패배했습니다.")
+        else:
+            st.warning("무승부(Push)입니다. 베팅금을 돌려받습니다.")
+            st.session_state.points += st.session_state.bet
+
+        if st.button("다시 하기 🔄"):
+            st.session_state.game_status = "BET"
+            st.rerun()
