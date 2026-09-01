@@ -23,7 +23,7 @@ if "bj_bet" not in st.session_state:
     st.session_state.bj_bet = 0
 
 # -----------------------------------------------------------------------------
-# 메인 영역 (게임을 먼저 처리하여 포인트를 업데이트)
+# 메인 영역 (게임 정산 후 사이드바를 그려 포인트 동기화)
 # -----------------------------------------------------------------------------
 
 # PAGE 1: 메인 로비 (HOME)
@@ -50,7 +50,7 @@ if st.session_state.current_page == "HOME":
         st.subheader("🃏 블랙잭 (Blackjack)")
         st.markdown("""
         - **규칙**: 딜러와 카드 합 **21**을 겨루는 카드 게임!
-        - **배당**: 승리 시 베팅금의 **2배**
+        - **배당**: 승리 시 베팅금의 **2배** (원금 + 1배 수익)
         """)
         if st.button("🃏 블랙잭 플레이", type="primary", use_container_width=True):
             st.session_state.current_page = "BLACKJACK"
@@ -70,7 +70,7 @@ if st.session_state.current_page == "HOME":
 
 # PAGE 2: 슬롯머신 (SLOT MACHINE)
 elif st.session_state.current_page == "SLOT":
-    st.title("🎰 하드모드 슬롯머신 (Slot Machine)")
+    st.title("🎰 슬롯머신 (Slot Machine)")
     st.write("8가지 심볼 중 3개를 일치시켜 보세요!")
     st.divider()
 
@@ -89,6 +89,7 @@ elif st.session_state.current_page == "SLOT":
         )
 
         if st.button("🎰 슬롯 돌리기!", type="primary", use_container_width=True):
+            # 1. 게임 시작 시 원금 차감
             st.session_state.points -= slot_bet
             
             slot_placeholder = st.empty()
@@ -101,19 +102,20 @@ elif st.session_state.current_page == "SLOT":
             result = [random.choice(symbols) for _ in range(3)]
             slot_placeholder.markdown(f"# [ {' | '.join(result)} ]")
 
+            # 2. 당첨 시 (원금 + 이익) 정산
             if result[0] == result[1] == result[2]:
-                winnings = slot_bet * 15
-                st.session_state.points += winnings
+                multiplier = 15
+                total_return = int(slot_bet * multiplier)  # 원금 포함 총 반환금
+                st.session_state.points += total_return
                 st.balloons()
-                st.success(f"🎉🎉🎉 대박 잭팟! 3개 일치! (+{winnings:,} P)")
+                st.success(f"🎉🎉🎉 대박 잭팟! 3개 일치! (원금 포함 +{total_return:,} P 획득)")
             elif result[0] == result[1] or result[1] == result[2] or result[0] == result[2]:
-                winnings = int(slot_bet * 1.2)
-                st.session_state.points += winnings
-                st.info(f"✨ 2개 일치! 소액 보상 (+{winnings:,} P)")
+                multiplier = 1.2
+                total_return = int(slot_bet * multiplier)  # 원금 포함 총 반환금
+                st.session_state.points += total_return
+                st.info(f"✨ 2개 일치! (원금 포함 +{total_return:,} P 획득)")
             else:
                 st.error(f"아쉽게도 꽝입니다! (-{slot_bet:,} P)")
-
-            st.info(f"현재 남은 포인트: {st.session_state.points:,} P")
 
 # PAGE 3: 블랙잭 (BLACKJACK)
 elif st.session_state.current_page == "BLACKJACK":
@@ -145,6 +147,7 @@ elif st.session_state.current_page == "BLACKJACK":
         random.shuffle(deck)
         st.session_state.deck = deck
         st.session_state.bj_bet = bet_amount
+        # 게임 시작 시 원금 차감
         st.session_state.points -= bet_amount
         st.session_state.player_hand = [st.session_state.deck.pop(), st.session_state.deck.pop()]
         st.session_state.dealer_hand = [st.session_state.deck.pop(), st.session_state.deck.pop()]
@@ -198,21 +201,25 @@ elif st.session_state.current_page == "BLACKJACK":
 
         if st.session_state.game_status == "GAME_OVER":
             st.divider()
+            bet = st.session_state.bj_bet
             if player_score > 21:
-                st.error("버스트(Bust)! 21을 초과하여 패배했습니다.")
+                st.error(f"버스트(Bust)! 21을 초과하여 패배했습니다. (-{bet:,} P)")
             elif dealer_score > 21:
-                st.success(f"딜러 버스트! 딜러가 21을 초과하여 승리했습니다. (+{st.session_state.bj_bet * 2:,} P)")
-                st.session_state.points += st.session_state.bj_bet * 2
+                total_return = bet * 2  # 원금(bet) + 수익(bet)
+                st.session_state.points += total_return
+                st.success(f"딜러 버스트! 승리했습니다. (원금 포함 +{total_return:,} P 획득)")
                 st.balloons()
             elif player_score > dealer_score:
-                st.success(f"승리했습니다! (+{st.session_state.bj_bet * 2:,} P)")
-                st.session_state.points += st.session_state.bj_bet * 2
+                total_return = bet * 2  # 원금(bet) + 수익(bet)
+                st.session_state.points += total_return
+                st.success(f"승리했습니다! (원금 포함 +{total_return:,} P 획득)")
                 st.balloons()
             elif player_score < dealer_score:
-                st.error("딜러의 점수가 더 높아 패배했습니다.")
+                st.error(f"딜러의 점수가 더 높아 패배했습니다. (-{bet:,} P)")
             else:
-                st.warning("무승부(Push)입니다. 베팅금을 돌려받습니다.")
-                st.session_state.points += st.session_state.bj_bet
+                total_return = bet  # 무승부 시 원금 복구
+                st.session_state.points += total_return
+                st.warning(f"무승부(Push)입니다. 베팅금을 돌려받습니다. (+{total_return:,} P)")
 
             if st.button("다시 하기 🔄", type="primary"):
                 st.session_state.game_status = "BET"
@@ -273,6 +280,7 @@ elif st.session_state.current_page == "ROULETTE":
             """)
 
         if spin_button:
+            # 원금 차감
             st.session_state.points -= roulette_bet
             
             wheel_placeholder = st.empty()
@@ -313,23 +321,20 @@ elif st.session_state.current_page == "ROULETTE":
                     is_win = True
 
             if is_win:
-                payout = roulette_bet * multiplier
-                st.session_state.points += payout
+                total_return = roulette_bet * multiplier  # 원금 포함 총 반환금
+                st.session_state.points += total_return
                 st.balloons()
-                st.success(f"🎉 축하합니다! 당첨되었습니다! (+{payout:,} P)")
+                st.success(f"🎉 축하합니다! 당첨되었습니다! (원금 포함 +{total_return:,} P 획득)")
             else:
                 st.error(f"아쉽게도 꽝입니다! (-{roulette_bet:,} P)")
-                
-            st.info(f"현재 남은 포인트: {st.session_state.points:,} P")
 
 # -----------------------------------------------------------------------------
-# 사이드바 (모든 정산 완료 후 최신 포인트를 받아 그리기)
+# 사이드바 (모든 게임 정산 완료 후 최신 포인트를 동기화하여 출력)
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.title("🎰 ROYAL CASINO")
     st.divider()
     
-    # 최신 정산 결과가 반영된 포인트를 바인딩
     st.metric(label="💰 보유 포인트", value=f"{st.session_state.points:,} P")
     
     if st.button("💵 포인트 무료 충전 (1,000 P)", use_container_width=True):
