@@ -22,36 +22,11 @@ if "game_status" not in st.session_state:
 if "bj_bet" not in st.session_state:
     st.session_state.bj_bet = 0
 
-# 2. 사이드바 (내비게이션 및 포인트 관리)
-with st.sidebar:
-    st.title("🎰 ROYAL CASINO")
-    st.divider()
-    
-    st.metric(label="💰 보유 포인트", value=f"{st.session_state.points:,} P")
-    
-    if st.button("💵 포인트 무료 충전 (1,000 P)", use_container_width=True):
-        st.session_state.points += 1000
-        st.toast("1,000 포인트가 충전되었습니다!", icon="🎉")
-        st.rerun()
-        
-    st.divider()
-    st.subheader("📌 바로가기")
-    if st.button("🏠 메인 로비", use_container_width=True):
-        st.session_state.current_page = "HOME"
-        st.rerun()
-    if st.button("🎰 슬롯머신 (Slot Machine)", use_container_width=True):
-        st.session_state.current_page = "SLOT"
-        st.rerun()
-    if st.button("🃏 블랙잭 (Blackjack)", use_container_width=True):
-        st.session_state.current_page = "BLACKJACK"
-        st.rerun()
-    if st.button("🎡 룰렛 (Roulette)", use_container_width=True):
-        st.session_state.current_page = "ROULETTE"
-        st.rerun()
+# -----------------------------------------------------------------------------
+# 메인 영역 (게임을 먼저 처리하여 포인트를 업데이트)
+# -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
 # PAGE 1: 메인 로비 (HOME)
-# -----------------------------------------------------------------------------
 if st.session_state.current_page == "HOME":
     st.title("🏛️ Streamlit Royal Casino 에 오신 것을 환영합니다!")
     st.write("원하시는 게임을 선택하여 포인트를 더 높여보세요!")
@@ -93,9 +68,7 @@ if st.session_state.current_page == "HOME":
             st.session_state.current_page = "ROULETTE"
             st.rerun()
 
-# -----------------------------------------------------------------------------
 # PAGE 2: 슬롯머신 (SLOT MACHINE)
-# -----------------------------------------------------------------------------
 elif st.session_state.current_page == "SLOT":
     st.title("🎰 하드모드 슬롯머신 (Slot Machine)")
     st.write("8가지 심볼 중 3개를 일치시켜 보세요!")
@@ -142,9 +115,7 @@ elif st.session_state.current_page == "SLOT":
 
             st.info(f"현재 남은 포인트: {st.session_state.points:,} P")
 
-# -----------------------------------------------------------------------------
 # PAGE 3: 블랙잭 (BLACKJACK)
-# -----------------------------------------------------------------------------
 elif st.session_state.current_page == "BLACKJACK":
     st.title("🃏 블랙잭 (Blackjack)")
     st.write("딜러는 점수 합이 17 이상이 될 때까지 무조건 카드를 받습니다.")
@@ -247,9 +218,7 @@ elif st.session_state.current_page == "BLACKJACK":
                 st.session_state.game_status = "BET"
                 st.rerun()
 
-# -----------------------------------------------------------------------------
 # PAGE 4: 룰렛 (ROULETTE)
-# -----------------------------------------------------------------------------
 elif st.session_state.current_page == "ROULETTE":
     st.title("🎡 아메리칸 룰렛 (American Roulette)")
     st.write("원하는 방식(색상, 홀/짝, 단일 숫자)으로 베팅해 보세요!")
@@ -352,3 +321,33 @@ elif st.session_state.current_page == "ROULETTE":
                 st.error(f"아쉽게도 꽝입니다! (-{roulette_bet:,} P)")
                 
             st.info(f"현재 남은 포인트: {st.session_state.points:,} P")
+
+# -----------------------------------------------------------------------------
+# 사이드바 (모든 정산 완료 후 최신 포인트를 받아 그리기)
+# -----------------------------------------------------------------------------
+with st.sidebar:
+    st.title("🎰 ROYAL CASINO")
+    st.divider()
+    
+    # 최신 정산 결과가 반영된 포인트를 바인딩
+    st.metric(label="💰 보유 포인트", value=f"{st.session_state.points:,} P")
+    
+    if st.button("💵 포인트 무료 충전 (1,000 P)", use_container_width=True):
+        st.session_state.points += 1000
+        st.toast("1,000 포인트가 충전되었습니다!", icon="🎉")
+        st.rerun()
+        
+    st.divider()
+    st.subheader("📌 바로가기")
+    if st.button("🏠 메인 로비", use_container_width=True):
+        st.session_state.current_page = "HOME"
+        st.rerun()
+    if st.button("🎰 슬롯머신 (Slot Machine)", use_container_width=True):
+        st.session_state.current_page = "SLOT"
+        st.rerun()
+    if st.button("🃏 블랙잭 (Blackjack)", use_container_width=True):
+        st.session_state.current_page = "BLACKJACK"
+        st.rerun()
+    if st.button("🎡 룰렛 (Roulette)", use_container_width=True):
+        st.session_state.current_page = "ROULETTE"
+        st.rerun()
