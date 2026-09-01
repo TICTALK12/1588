@@ -39,6 +39,9 @@ with st.sidebar:
     if st.button("🏠 메인 로비", use_container_width=True):
         st.session_state.current_page = "HOME"
         st.rerun()
+    if st.button("🎰 슬롯머신 (Slot Machine)", use_container_width=True):
+        st.session_state.current_page = "SLOT"
+        st.rerun()
     if st.button("🃏 블랙잭 (Blackjack)", use_container_width=True):
         st.session_state.current_page = "BLACKJACK"
         st.rerun()
@@ -54,20 +57,33 @@ if st.session_state.current_page == "HOME":
     st.write("원하시는 게임을 선택하여 포인트를 더 높여보세요!")
     st.divider()
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
+        st.subheader("🎰 슬롯머신 (Slot)")
+        st.markdown("""
+        - **규칙**: 레버를 돌려 3개의 심볼을 맞추는 클래식 슬롯!
+        - **배당**: 
+            - 3개 일치: **10배** (잭팟 🥳)
+            - 2개 일치: **2배**
+        - **특징**: 빠르게 즐길 수 있는 스피디한 게임!
+        """)
+        if st.button("🎰 슬롯머신 플레이", type="primary", use_container_width=True):
+            st.session_state.current_page = "SLOT"
+            st.rerun()
+
+    with col2:
         st.subheader("🃏 블랙잭 (Blackjack)")
         st.markdown("""
         - **규칙**: 딜러와 카드 합 **21**을 겨루는 클래식 카드 게임!
         - **배당**: 승리 시 베팅금의 **2배**
         - **특징**: Hit/Stand 전략을 활용해 딜러를 이겨보세요.
         """)
-        if st.button("🃏 블랙잭 플레이하기", type="primary", use_container_width=True):
+        if st.button("🃏 블랙잭 플레이", type="primary", use_container_width=True):
             st.session_state.current_page = "BLACKJACK"
             st.rerun()
             
-    with col2:
+    with col3:
         st.subheader("🎡 룰렛 (Roulette)")
         st.markdown("""
         - **규칙**: 회전하는 휠에서 공이 멈출 숫자와 색상을 맞추는 게임!
@@ -76,12 +92,64 @@ if st.session_state.current_page == "HOME":
             - 특정 숫자 맞추기 (0~36): **36배**
         - **특징**: 짜릿한 한 방 잭팟을 노려보세요!
         """)
-        if st.button("🎡 룰렛 플레이하기", type="primary", use_container_width=True):
+        if st.button("🎡 룰렛 플레이", type="primary", use_container_width=True):
             st.session_state.current_page = "ROULETTE"
             st.rerun()
 
 # -----------------------------------------------------------------------------
-# PAGE 2: 블랙잭 (BLACKJACK)
+# PAGE 2: 슬롯머신 (SLOT MACHINE)
+# -----------------------------------------------------------------------------
+elif st.session_state.current_page == "SLOT":
+    st.title("🎰 클래식 슬롯머신 (Slot Machine)")
+    st.write("슬롯을 돌려 동일한 문양을 맞춰보세요!")
+    st.divider()
+
+    symbols = ["🍒", "🍋", "🔔", "💎", "7️⃣"]
+
+    if st.session_state.points <= 0:
+        st.error("포인트를 모두 잃었습니다! 사이드바에서 포인트를 충전해주세요.")
+    else:
+        slot_bet = st.number_input(
+            "베팅 금액",
+            min_value=10,
+            max_value=st.session_state.points,
+            value=min(100, st.session_state.points),
+            step=10,
+            key="slot_bet_input"
+        )
+
+        if st.button("🎰 슬롯 돌리기!", type="primary", use_container_width=True):
+            st.session_state.points -= slot_bet
+            
+            # 슬롯 애니메이션 연출
+            slot_placeholder = st.empty()
+            with st.spinner("슬롯 돌아가는 중... 🎰"):
+                for _ in range(12):
+                    temp_spin = [random.choice(symbols) for _ in range(3)]
+                    slot_placeholder.markdown(f"# [ {' | '.join(temp_spin)} ]")
+                    time.sleep(0.08)
+
+            # 최종 슬롯 결과
+            result = [random.choice(symbols) for _ in range(3)]
+            slot_placeholder.markdown(f"# [ {' | '.join(result)} ]")
+
+            # 당첨 정산
+            if result[0] == result[1] == result[2]:
+                winnings = slot_bet * 10
+                st.session_state.points += winnings
+                st.balloons()
+                st.success(f"🎉🎉 🎉 JACKPOT! 3개 일치! (+{winnings:,} P)")
+            elif result[0] == result[1] or result[1] == result[2] or result[0] == result[2]:
+                winnings = slot_bet * 2
+                st.session_state.points += winnings
+                st.info(f"✨ 2개 일치! (+{winnings:,} P)")
+            else:
+                st.error(f"아쉽게도 꽝입니다! (-{slot_bet:,} P)")
+
+            st.info(f"현재 남은 포인트: {st.session_state.points:,} P")
+
+# -----------------------------------------------------------------------------
+# PAGE 3: 블랙잭 (BLACKJACK)
 # -----------------------------------------------------------------------------
 elif st.session_state.current_page == "BLACKJACK":
     st.title("🃏 블랙잭 (Blackjack)")
@@ -185,7 +253,7 @@ elif st.session_state.current_page == "BLACKJACK":
                 st.rerun()
 
 # -----------------------------------------------------------------------------
-# PAGE 3: 룰렛 (ROULETTE)
+# PAGE 4: 룰렛 (ROULETTE)
 # -----------------------------------------------------------------------------
 elif st.session_state.current_page == "ROULETTE":
     st.title("🎡 유러피언 룰렛 (Roulette)")
