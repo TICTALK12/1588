@@ -54,7 +54,7 @@ with st.sidebar:
 # -----------------------------------------------------------------------------
 if st.session_state.current_page == "HOME":
     st.title("🏛️ Streamlit Royal Casino 에 오신 것을 환영합니다!")
-    st.write("원하시는 게임을 선택하여 포인트를 더 높여보세요!")
+    st.write("원하시는 게임을 선택하여 포인트를 더 높여보세요! (매콤해진 난이도 적용 완료🔥)")
     st.divider()
     
     col1, col2, col3 = st.columns(3)
@@ -64,9 +64,9 @@ if st.session_state.current_page == "HOME":
         st.markdown("""
         - **규칙**: 레버를 돌려 3개의 심볼을 맞추는 클래식 슬롯!
         - **배당**: 
-            - 3개 일치: **10배** (잭팟 🥳)
-            - 2개 일치: **2배**
-        - **특징**: 빠르게 즐길 수 있는 스피디한 게임!
+            - 3개 일치: **15배** (극악의 확률 잭팟 🥳)
+            - 2개 일치: **1.2배** (소액 보상)
+        - **특징**: 심볼이 8개로 늘어나 꽝 확률이 크게 높아졌습니다!
         """)
         if st.button("🎰 슬롯머신 플레이", type="primary", use_container_width=True):
             st.session_state.current_page = "SLOT"
@@ -75,9 +75,9 @@ if st.session_state.current_page == "HOME":
     with col2:
         st.subheader("🃏 블랙잭 (Blackjack)")
         st.markdown("""
-        - **규칙**: 딜러와 카드 합 **21**을 겨루는 클래식 카드 게임!
+        - **규칙**: 딜러와 카드 합 **21**을 겨루는 카드 게임!
         - **배당**: 승리 시 베팅금의 **2배**
-        - **특징**: Hit/Stand 전략을 활용해 딜러를 이겨보세요.
+        - **특징**: 딜러 Soft 17 규칙 적용으로 딜러 버스트 확률 감소!
         """)
         if st.button("🃏 블랙잭 플레이", type="primary", use_container_width=True):
             st.session_state.current_page = "BLACKJACK"
@@ -86,11 +86,11 @@ if st.session_state.current_page == "HOME":
     with col3:
         st.subheader("🎡 룰렛 (Roulette)")
         st.markdown("""
-        - **규칙**: 회전하는 휠에서 공이 멈출 숫자와 색상을 맞추는 게임!
+        - **규칙**: 회전하는 휠에서 공이 멈출 숫자/색상을 맞추는 게임!
         - **배당**: 
-            - 홀수/짝수, Red/Black: **2배**
-            - 특정 숫자 맞추기 (0~36): **36배**
-        - **특징**: 짜릿한 한 방 잭팟을 노려보세요!
+            - 홀/짝, Red/Black: **2배**
+            - 특정 숫자: **36배**
+        - **특징**: `0`과 `00`이 모두 존재하는 하우스 우위 룰 적용!
         """)
         if st.button("🎡 룰렛 플레이", type="primary", use_container_width=True):
             st.session_state.current_page = "ROULETTE"
@@ -100,11 +100,12 @@ if st.session_state.current_page == "HOME":
 # PAGE 2: 슬롯머신 (SLOT MACHINE)
 # -----------------------------------------------------------------------------
 elif st.session_state.current_page == "SLOT":
-    st.title("🎰 클래식 슬롯머신 (Slot Machine)")
-    st.write("슬롯을 돌려 동일한 문양을 맞춰보세요!")
+    st.title("🎰 하드모드 슬롯머신 (Slot Machine)")
+    st.write("8가지 심볼 중 3개를 일치시켜 보세요! (꽝 확률 약 80%)")
     st.divider()
 
-    symbols = ["🍒", "🍋", "🔔", "💎", "7️⃣"]
+    # 심볼을 5개 -> 8개로 확대하여 3개 일치(1/512), 2개 일치 확률 감소
+    symbols = ["🍒", "🍋", "🔔", "💎", "7️⃣", "🍇", "🍉", "💣"]
 
     if st.session_state.points <= 0:
         st.error("포인트를 모두 잃었습니다! 사이드바에서 포인트를 충전해주세요.")
@@ -133,16 +134,16 @@ elif st.session_state.current_page == "SLOT":
             result = [random.choice(symbols) for _ in range(3)]
             slot_placeholder.markdown(f"# [ {' | '.join(result)} ]")
 
-            # 당첨 정산
+            # 당첨 정산 (하향된 확률 & 배당)
             if result[0] == result[1] == result[2]:
-                winnings = slot_bet * 10
+                winnings = slot_bet * 15
                 st.session_state.points += winnings
                 st.balloons()
-                st.success(f"🎉🎉 🎉 JACKPOT! 3개 일치! (+{winnings:,} P)")
+                st.success(f"🎉🎉🎉 대박 잭팟! 3개 일치! (+{winnings:,} P)")
             elif result[0] == result[1] or result[1] == result[2] or result[0] == result[2]:
-                winnings = slot_bet * 2
+                winnings = int(slot_bet * 1.2)
                 st.session_state.points += winnings
-                st.info(f"✨ 2개 일치! (+{winnings:,} P)")
+                st.info(f"✨ 2개 일치! 소액 보상 (+{winnings:,} P)")
             else:
                 st.error(f"아쉽게도 꽝입니다! (-{slot_bet:,} P)")
 
@@ -153,6 +154,7 @@ elif st.session_state.current_page == "SLOT":
 # -----------------------------------------------------------------------------
 elif st.session_state.current_page == "BLACKJACK":
     st.title("🃏 블랙잭 (Blackjack)")
+    st.write("딜러는 점수 합이 17 이상이 될 때까지 무조건 카드를 받습니다.")
     
     suits = ["♠️", "♥️", "♦️", "♣️"]
     ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
@@ -225,6 +227,7 @@ elif st.session_state.current_page == "BLACKJACK":
                     st.rerun()
             with col2:
                 if st.button("Stand (차례 넘기기) ✋", use_container_width=True):
+                    # 딜러는 17점 이상일 때까지 카드를 받아야 함
                     while calculate_score(st.session_state.dealer_hand) < 17:
                         st.session_state.dealer_hand.append(st.session_state.deck.pop())
                     st.session_state.game_status = "GAME_OVER"
@@ -256,12 +259,14 @@ elif st.session_state.current_page == "BLACKJACK":
 # PAGE 4: 룰렛 (ROULETTE)
 # -----------------------------------------------------------------------------
 elif st.session_state.current_page == "ROULETTE":
-    st.title("🎡 유러피언 룰렛 (Roulette)")
-    st.write("원하는 방식(색상, 홀/짝, 단일 숫자)으로 베팅해 보세요!")
+    st.title("🎡 아메리칸 룰렛 (American Roulette)")
+    st.write("0과 00이 포함되어 더욱 짜릿한 난이도로 플레이됩니다!")
     st.divider()
 
     RED_NUMBERS = {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}
     BLACK_NUMBERS = {2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35}
+    # 전체 칸 종류: 0 ~ 36 (숫자) + '00' (문자열)
+    ALL_SLOTS = [str(i) for i in range(37)] + ["00"]
 
     if st.session_state.points <= 0:
         st.error("포인트를 모두 잃었습니다! 사이드바에서 포인트를 충전해주세요.")
@@ -304,7 +309,7 @@ elif st.session_state.current_page == "ROULETTE":
             st.markdown("""
             - 🔴 **Red**: 1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36
             - ⚫ **Black**: 2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35
-            - 🟢 **Green**: 0 (단일 숫자로만 당첨 가능)
+            - 🟢 **Green**: 0, 00 (색상/홀짝 베팅 시 무조건 꽝 처리)
             """)
 
         if spin_button:
@@ -314,36 +319,41 @@ elif st.session_state.current_page == "ROULETTE":
             wheel_placeholder = st.empty()
             with st.spinner("룰렛 돌리는 중... 🎡"):
                 for _ in range(15):
-                    temp_num = random.randint(0, 36)
-                    color_tag = "🔴" if temp_num in RED_NUMBERS else ("⚫" if temp_num in BLACK_NUMBERS else "🟢")
-                    wheel_placeholder.markdown(f"### 🎡 휠 돌아가는 중: {color_tag} `{temp_num}`")
+                    temp_slot = random.choice(ALL_SLOTS)
+                    if temp_slot in ["0", "00"]:
+                        color_tag = "🟢"
+                    else:
+                        color_tag = "🔴" if int(temp_slot) in RED_NUMBERS else "⚫"
+                    wheel_placeholder.markdown(f"### 🎡 휠 돌아가는 중: {color_tag} `{temp_slot}`")
                     time.sleep(0.1)
 
-            # 최종 당첨 결과
-            winning_number = random.randint(0, 36)
-            if winning_number in RED_NUMBERS:
-                winning_color = "🔴 Red"
-            elif winning_number in BLACK_NUMBERS:
-                winning_color = "⚫ Black"
+            # 최종 당첨 결과 (00 칸 추가로 하우스 우위 상승)
+            winning_slot = random.choice(ALL_SLOTS)
+            if winning_slot in ["0", "00"]:
+                winning_color = f"🟢 Green ({winning_slot})"
             else:
-                winning_color = "🟢 Green (0)"
+                num = int(winning_slot)
+                winning_color = "🔴 Red" if num in RED_NUMBERS else "⚫ Black"
 
-            wheel_placeholder.markdown(f"## 🎯 최종 결과: {winning_color} `{winning_number}`")
+            wheel_placeholder.markdown(f"## 🎯 최종 결과: {winning_color} `{winning_slot}`")
 
             # 당첨 여부 확인
             is_win = False
             
-            if bet_type == "색상 (Red/Black)":
-                if (selected_option == "🔴 Red" and winning_number in RED_NUMBERS) or \
-                   (selected_option == "⚫ Black" and winning_number in BLACK_NUMBERS):
-                    is_win = True
-            elif bet_type == "홀수 / 짝수 (Odd/Even)":
-                if winning_number != 0:
-                    if (selected_option == "짝수 (Even)" and winning_number % 2 == 0) or \
-                       (selected_option == "홀수 (Odd)" and winning_number % 2 != 0):
+            if winning_slot not in ["0", "00"]:
+                num = int(winning_slot)
+                if bet_type == "색상 (Red/Black)":
+                    if (selected_option == "🔴 Red" and num in RED_NUMBERS) or \
+                       (selected_option == "⚫ Black" and num in BLACK_NUMBERS):
                         is_win = True
-            elif bet_type == "단일 숫자 (0~36)":
-                if selected_option == winning_number:
+                elif bet_type == "홀수 / 짝수 (Odd/Even)":
+                    if (selected_option == "짝수 (Even)" and num % 2 == 0) or \
+                       (selected_option == "홀수 (Odd)" and num % 2 != 0):
+                        is_win = True
+            
+            # 단일 숫자는 0만 맞추기 가능 (00은 숫자 선택에서 제외)
+            if bet_type == "단일 숫자 (0~36)":
+                if winning_slot != "00" and selected_option == int(winning_slot):
                     is_win = True
 
             # 정산
