@@ -25,7 +25,8 @@ def calculate_score(hand):
     score = 0
     aces = 0
     for card in hand:
-        val = card[:-2]
+        # 공백을 기준으로 카드의 랭크(숫자/문자)만 정확하게 가져옵니다.
+        val = card.split()[0]
         if val in ["J", "Q", "K"]:
             score += 10
         elif val == "A":
@@ -33,6 +34,8 @@ def calculate_score(hand):
             score += 11
         else:
             score += int(val)
+            
+    # 에이스(A) 처리: 21 초과 시 11점을 1점으로 계산
     while score > 21 and aces > 0:
         score -= 10
         aces -= 1
@@ -54,11 +57,25 @@ st.sidebar.metric("보유 포인트", f"{st.session_state.points} P")
 
 # [단계 1] 베팅 화면
 if st.session_state.game_status == "BET":
-    st.subheader("게임 시작전 베팅해 주세요.")
-    bet_input = st.number_input("베팅금액", min_value=10, max_value=st.session_state.points, value=min(100, st.session_state.points), step=10)
-    if st.button("게임 시작 🎲"):
-        start_new_game(bet_input)
-        st.rerun()
+    st.subheader("게임 시작 전 베팅해 주세요.")
+    
+    # 포인트가 부족한 경우 처리
+    if st.session_state.points <= 0:
+        st.error("포인트를 모두 잃었습니다!")
+        if st.button("포인트 충전하기 (1,000 P) 💵"):
+            st.session_state.points = 1000
+            st.rerun()
+    else:
+        bet_input = st.number_input(
+            "베팅금액", 
+            min_value=10, 
+            max_value=st.session_state.points, 
+            value=min(100, st.session_state.points), 
+            step=10
+        )
+        if st.button("게임 시작 🎲"):
+            start_new_game(bet_input)
+            st.rerun()
 
 # [단계 2] 진행 및 결과 화면
 elif st.session_state.game_status in ["PLAYING", "GAME_OVER"]:
@@ -68,7 +85,7 @@ elif st.session_state.game_status in ["PLAYING", "GAME_OVER"]:
     # 딜러 영역
     st.subheader("🤵 딜러 패")
     if st.session_state.game_status == "PLAYING":
-        st.write(f"[{st.session_state.dealer_hand[0]} , 🂠]")
+        st.write(f"[ {st.session_state.dealer_hand[0]} , 🂠 ]")
     else:
         st.write(f"{'  '.join(st.session_state.dealer_hand)} (점수: {dealer_score})")
 
