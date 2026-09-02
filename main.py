@@ -336,11 +336,6 @@ with st.sidebar:
     st.divider()
     
     st.metric(label="💰 보유 포인트", value=f"{st.session_state.points:,} P")
-    
-    if st.button("💵 포인트 무료 충전 (1,000 P)", use_container_width=True):
-        st.session_state.points += 1000
-        st.toast("1,000 포인트가 충전되었습니다!", icon="🎉")
-        st.rerun()
         
     st.divider()
     st.subheader("📌 바로가기")
